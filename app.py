@@ -2,7 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from num2words import num2words
 
-# Page Setup
+# Page Configuration
 st.set_page_config(page_title="Carmen NHS DV Generator", layout="centered")
 
 def format_amount_in_words(amount):
@@ -16,30 +16,35 @@ def format_amount_in_words(amount):
     except:
         return "_________________ Pesos Only"
 
-def get_voucher_html(fund, payee, addr, date, dv_no, amount, p_text, amt_words):
-    # We use a simple f-string here for maximum stability
-    return f"""
-    <div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: serif; width: 700px; margin: auto; line-height: 1.2;">
-        <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
-        <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
-            <div style="font-size: 11px;">Department of Education - Region III</div>
-            <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
-            <div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px;">
-            <tr>
-                <td style="border: 1px solid black; padding: 5px; width: 70%;"><b>Fund Cluster:</b> {fund}</td>
-                <td style="border: 1px solid black; padding: 5px;"><b>Date:</b> {date}<br><b>DV No:</b> {dv_no}</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid black; padding: 5px;" colspan="2"><b>Payee:</b> {payee} | <b>Address:</b> {addr}</td>
-            </tr>
-        </table>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: -1px;">
-            <tr style="text-align: center; font-weight: bold;">
-                <td style="border: 1px solid black; padding: 5px; width: 70%;">Particulars</td>
-                <td style="border: 1px solid black; padding: 5px;">Amount</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid black; padding: 10px; height: 160px; vertical-align: top;">{p_text}</td>
-                <td style="border: 1px solid
+# --- SIDEBAR INPUTS ---
+with st.sidebar:
+    st.header("📋 Voucher Details")
+    f_cluster = st.text_input("Fund Cluster", "01")
+    f_payee = st.text_input("Payee", "GSIS")
+    f_address = st.text_input("Address", "Cabanatuan City")
+    f_dv_no = st.text_input("DV No.", placeholder="2026-01-000")
+    f_amount = st.number_input("Amount (PHP)", min_value=0.0, format="%.2f")
+    f_date = st.date_input("Date")
+
+st.title("📑 Official DV Generator")
+u_input = st.text_area("Transaction Details:", placeholder="e.g., GSIS January Premiums")
+
+if st.button("Generate Complete Voucher"):
+    if u_input and f_amount > 0:
+        try:
+            if "GEMINI_API_KEY" not in st.secrets:
+                st.error("API Key missing in Secrets!")
+                st.stop()
+            
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+            model = genai.GenerativeModel('gemini-2.0-flash')
+            
+            with st.spinner('Generating...'):
+                prompt = f"Write a professional 1-paragraph DepEd particular for {u_input} for Carmen NHS. Start with 'Payment of'."
+                response = model.generate_content(prompt)
+                p_text = response.text.replace("**", "").strip()
+                amt_words = format_amount_in_words(f_amount)
+
+                # --- FAIL-SAFE HTML ASSEMBLY ---
+                # We build the HTML line-by-line to avoid SyntaxErrors
+                html = '<div style="background-color: white; color: black; padding:
