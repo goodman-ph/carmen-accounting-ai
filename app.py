@@ -40,21 +40,18 @@ if st.button("Generate Official Voucher"):
         model = genai.GenerativeModel('gemini-2.5-flash')
         
         with st.spinner('🖋️ Drawing Official Template...'):
-            response = model.generate_content(f"Generate a professional DepEd accounting particular for: {user_input}. Start with 'Payment of...' and mention Carmen National High School.")
+            # The AI prompt specifically for Carmen NHS
+            prompt = f"Generate a formal DepEd accounting particular for Carmen National High School for: {user_input}. Start with 'Payment of...' and keep it concise."
+            response = model.generate_content(prompt)
             particulars_text = response.text
             words_amount = format_amount_in_words(amount)
 
             # --- 3. THE "APPENDIX 32" HTML TEMPLATE ---
-            # The SyntaxError fix: Ensure f-string is properly wrapped and closed
+            # FIX: We ensure the triple quotes are opened and closed properly
             voucher_html = f"""
 <div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 100%; box-sizing: border-box;">
     <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
     <div style="text-align: center; border-bottom: 1px solid black; padding-bottom: 5px; margin-bottom: 10px;">
-        <div style="font-size: 12px;">Department of Education - Region III</div>
+        <div style="font-size: 11px;">Department of Education - Region III</div>
         <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
-        <div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>
-    </div>
-
-    <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: black;">
-        <tr>
-            <td style="
+        <div style="font-weight: bold
