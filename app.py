@@ -28,7 +28,7 @@ user_input = st.text_area("Transaction Details:", placeholder="e.g., GSIS Januar
 
 if st.button("Generate Complete Voucher"):
     if not user_input or amount <= 0:
-        st.error("❌ Please enter both details and an amount.")
+        st.error("❌ Please enter details and an amount.")
     else:
         try:
             if "GEMINI_API_KEY" not in st.secrets:
@@ -36,8 +36,6 @@ if st.button("Generate Complete Voucher"):
                 st.stop()
                 
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            
-            # Updated to gemini-2.0-flash for better compatibility
             model = genai.GenerativeModel('gemini-2.0-flash')
             
             with st.spinner('🖋️ Generating Particulars...'):
@@ -46,18 +44,11 @@ if st.button("Generate Complete Voucher"):
                 p_text = response.text.replace("**", "").strip()
                 amt_words = format_amount_in_words(amount)
 
-            # --- THE FULL VOUCHER HTML ---
-            # We use a single string to avoid syntax errors
-            voucher_html = f"""
-            <div style="background-color: white; color: black; padding: 25px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 700px; margin: auto; line-height: 1.2;">
-                <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
-                <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
-                    <div style="font-size: 12px;">Department of Education - Region III</div>
-                    <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
-                    <div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px;">
-                    <tr>
-                        <td style="border: 1px solid black; padding: 5px; width: 70%;"><b>Fund Cluster:</b> {fund_cluster}</td>
-                        <td style="border: 1px solid black; padding: 5px;"><b>Date:</b> {dv_date}<br><b>DV No:</b> {dv_no}
+            # --- FAIL-SAFE HTML ASSEMBLY ---
+            # We join lines manually to avoid triple-quote SyntaxErrors
+            html_lines = [
+                '<div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: serif; width: 700px; margin: auto; line-height: 1.2;">',
+                '<div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>',
+                '<div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">',
+                '<div style="font-size: 11px;">Department of Education - Region III</div>',
+                '<div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>',
