@@ -16,40 +16,13 @@ else:
 
 # 2. Model Initialization
 try:
+    # Using the stable 2.5-flash for the best 2026 performance
     model = genai.GenerativeModel('gemini-2.5-flash')
 except Exception as e:
     st.error(f"Model setup error: {e}")
 
-# 3. User Interface
-st.info("💡 **Instructions:** Enter the nature of the expense below to generate formal particulars.")
-
-user_input = st.text_input("Enter Transaction Details (e.g., Payment for Water Bill Nov 2025):")
-
-if st.button("Generate All Particulars"):
-    if user_input:
-        try:
-            with st.spinner('🖋️ Drafting professional particulars...'):
-                prompt = (
-                    f"You are a Senior DepEd Accountant at Carmen National High School. "
-                    f"Generate professional accounting particulars for: {user_input}. "
-                    "Provide 3 specific sections: "
-                    "1. ORS (Obligation Request and Status): 'To record obligation for...' "
-                    "2. DV (Disbursement Voucher): 'To record payment of...' "
-                    "3. JEV (Journal Entry Voucher): Brief Explanation."
-                )
-                
-                response = model.generate_content(prompt)
-                st.success("✅ Generated Successfully!")
-                st.markdown("---")
-                st.markdown(response.text)
-                st.divider()
-                st.caption("Review against COA guidelines before printing.")
-
-        except Exception as e:
-            st.error(f"⚠️ Connection Error: {e}")
-    else:
-        st.warning("⚠️ Please enter details first.")
-
+# 3. Official Master Template (LOCKED RULES)
+OFFICIAL_TEMPLATE = """
 You are the Senior School Accountant for Carmen National High School. 
 Generate uniform particulars following these Philippine COA/DepEd standards:
 
@@ -69,3 +42,31 @@ RULES:
 4. MANDATORY: 
    - Always include the name "Carmen National High School".
    - Use UACS codes: Water (5020401000), Electricity (5020402000), Internet (5020503000).
+"""
+
+# 4. User Interface
+st.info("💡 **Instructions:** Enter transaction details to generate uniform official particulars.")
+
+user_input = st.text_input("Enter Details (e.g., Water bill Jan 2026, Bill #123, 1,500 pesos):")
+
+if st.button("Generate Official Particulars"):
+    if user_input:
+        try:
+            with st.spinner('🖋️ Drafting uniform particulars...'):
+                # Combine the rules with the user's input
+                final_prompt = f"{OFFICIAL_TEMPLATE}\n\nTRANSACTION TO PROCESS: {user_input}"
+                
+                response = model.generate_content(final_prompt)
+                
+                st.success("✅ Uniformed Particulars Generated!")
+                st.divider()
+                st.markdown(response.text)
+                
+        except Exception as e:
+            st.error(f"⚠️ Connection Error: {e}")
+    else:
+        st.warning("⚠️ Please enter details first.")
+
+# Footer
+st.markdown("---")
+st.caption("Note: This is an AI-assisted drafting tool for Carmen NHS. Verify against latest COA/DepEd guidelines.")
