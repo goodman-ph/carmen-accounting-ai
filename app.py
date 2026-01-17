@@ -1,81 +1,105 @@
 import streamlit as st
 import google.generativeai as genai
+from num2words import num2words
 
-# Helper function to convert number to words (Simplified for School Use)
-def amount_to_words(number):
-    from num2words import num2words
+# Page Configuration for a professional look
+st.set_page_config(page_title="Carmen NHS DV System", layout="centered")
+
+# --- 1. AMOUNT IN WORDS LOGIC ---
+def format_amount_in_words(amount):
     try:
-        words = num2words(number, lang='en')
-        return words.replace('and', '').title() + " Pesos Only"
+        # Splits pesos and centavos for official COA format
+        pesos = int(amount)
+        centavos = int(round((amount - pesos) * 100))
+        words = num2words(pesos, lang='en').replace('and', '').title()
+        
+        if centavos > 0:
+            return f"{words} and {centavos}/100 Pesos Only"
+        return f"{words} Pesos Only"
     except:
-        return "_________________ Pesos Only"
+        return ""
 
-# Page Config
-st.set_page_config(page_title="Carmen NHS DV Generator", layout="wide")
-
-# 1. Official Master Template
+# --- 2. MASTER AI RULES ---
 OFFICIAL_TEMPLATE = """
 You are the Senior School Accountant for Carmen National High School. 
-Generate uniform particulars following Philippine COA/DepEd standards:
-RULES:
-1. ORS: "To recognize obligation for [Expense Name] of [Payee]..."
-2. DV: "Payment of [Expense Name] for [Payee] for the period [Date] per [Docs]..."
-3. JEV: Provide Account Title | UACS Code | Debit | Credit.
-4. MANDATORY: Include 'Carmen National High School'.
+Generate official particulars for a Disbursement Voucher.
+Rule: Start with 'Payment of...' and include Carmen National High School. 
+Be concise enough to fit in a standard DV Box.
 """
 
-# 2. Sidebar for Official Headers (Extract Data)
+# --- 3. SIDEBAR DATA ENTRY (Header Data) ---
 with st.sidebar:
-    st.header("📋 Voucher Header Data")
-    payee = st.text_input("Payee (e.g., GSIS or Name)")
-    address = st.text_input("Address")
-    tin_emp = st.text_input("TIN / Employee No.")
-    dv_date = st.date_input("Date")
-    dv_no = st.text_input("DV No.", placeholder="2026-01-001")
+    st.header("📋 Voucher Headers")
+    payee = st.text_input("Payee", value="GSIS")
+    address = st.text_input("Address", value="Cabanatuan City, Nueva Ecija")
+    tin_no = st.text_input("TIN/Employee No.")
+    dv_no = st.text_input("DV No.", placeholder="2026-01-000")
     amount = st.number_input("Amount (PHP)", min_value=0.0, format="%.2f")
 
-# 3. Main Interface
-st.title("📑 Carmen NHS Disbursement Voucher Tool")
-user_input = st.text_area("Transaction Details (Purpose):", placeholder="e.g. Water bill for Jan 2026")
+# --- 4. MAIN INTERFACE ---
+st.title("📑 Official DV Generator")
+user_input = st.text_area("Transaction Details:", placeholder="e.g. remittance of employee premiums for Jan 2026")
 
-if st.button("Generate & Preview Voucher"):
+if st.button("Generate Official Voucher"):
     if user_input and amount > 0:
-        # Configuration
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         model = genai.GenerativeModel('gemini-2.5-flash')
         
-        # Process Particulars
         response = model.generate_content(f"{OFFICIAL_TEMPLATE}\n\nPROCESS: {user_input}")
-        particulars = response.text
+        particulars_text = response.text
+        words_amount = format_amount_in_words(amount)
+
+        # --- 5. THE PRINTABLE TEMPLATE (HTML/CSS) ---
+        # This section creates the boxes that look like your photo
+        st.markdown(f"""
+        <div style="border: 2px solid black; padding: 15px; background-color: white; color: black; font-family: serif;">
+            <div style="text-align: center; font-weight: bold; border-bottom: 1px solid black; padding-bottom: 5px;">
+                DISBURSEMENT VOUCHER
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px; width: 70%;"><b>Payee:</b> {payee}</td>
+                    <td style="border: 1px solid black; padding: 5px;"><b>Date:</b> {st.date_input("Date").strftime('%m/%d/%Y')}</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;"><b>Address:</b> {address}</td>
+                    <td style="border: 1px solid black; padding: 5px;"><b>DV No:</b> {dv_no}</td>
+                </tr>
+            </table>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr style="text-align: center; font-weight: bold;">
+                    <td style="border: 1px solid black; padding: 5px; width: 70%;">Particulars</td>
+                    <td style="border: 1px solid black; padding: 5px;">Amount</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid black; padding: 10px; height: 150px; vertical-align: top;">
+                        {particulars_text}
+                    </td>
+                    <td style="border: 1px solid black; text-align: right; padding: 10px; vertical-align: top; font-weight: bold;">
+                        ₱ {amount:,.2f}
+                    </td>
+                </tr>
+            </table>
+
+            <div style="border: 1px solid black; padding: 10px; margin-top: 10px;">
+                <b>A. Certified:</b> Expenses/Cash Advance necessary, lawful and incurred under my direct supervision.<br><br>
+                <div style="text-align: center;">
+                    <b>JESUSA D. BOTE, CESE</b><br>
+                    School Principal IV
+                </div>
+            </div>
+
+            <div style="border: 1px solid black; padding: 10px; margin-top: 10px; background-color: #f9f9f9;">
+                <b>D. Approved for Payment:</b><br><br>
+                <div style="text-align: center; font-style: italic; font-weight: bold;">
+                    {words_amount}
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_value=True)
         
-        # Display the Digital Form
-        st.success("✅ Voucher Ready for Printing")
-        
-        with st.container(border=True):
-            # Header Table
-            st.markdown(f"**Payee:** {payee} | **Date:** {dv_date} | **DV No:** {dv_no}")
-            st.markdown(f"**Address:** {address} | **TIN/Emp No:** {tin_emp}")
-            st.divider()
-            
-            # Box A: Particulars
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.write("**Particulars**")
-                st.write(particulars)
-            with col2:
-                st.write("**Amount**")
-                st.subheader(f"₱{amount:,.2f}")
-            
-            st.divider()
-            
-            # Box D: Approved for Payment (Amount in Words)
-            st.write("**D. Approved for Payment**")
-            amt_words = amount_to_words(amount)
-            st.info(f"**{amt_words}**")
-            
-            # Signature Box
-            st.write("**JESUSA D. BOTE, CESE**")
-            st.caption("School Principal IV")
-            
+        st.info("💡 To print: Press **Ctrl + P** and set layout to 'Portrait'.")
     else:
-        st.warning("Please enter transaction details and an amount.")
+        st.error("Please enter both Transaction Details and Amount.")
