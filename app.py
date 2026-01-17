@@ -38,22 +38,16 @@ if st.button("Generate Complete Voucher"):
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         model = genai.GenerativeModel('gemini-2.5-flash')
         
-        with st.spinner('🖋️ Cleaning Particulars...'):
+        with st.spinner('🖋️ Processing...'):
             prompt = (
                 f"Act as a Senior School Accountant. Generate ONLY the official 'Particulars' text "
                 f"for a Disbursement Voucher based on this: {user_input}. "
                 f"RULES: 1. Start with 'Payment of...'. 2. One single paragraph. "
-                f"3. No bullets or headers. 4. Mention Carmen National High School."
+                f"3. No bullets. 4. Mention Carmen National High School."
             )
             response = model.generate_content(prompt)
             p_text = response.text.replace("**", "").strip()
             amt_words = format_amount_in_words(amount)
 
-            # BUILDING THE FULL TEMPLATE - USING TRIPLE QUOTES FOR STABILITY
-            voucher_html = f"""
-<div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 800px; margin: auto; line-height: 1.2;">
-    <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
-    
-    <div style="text-align: center; margin-bottom: 10px;">
-        <div style="font-size: 12px;">Department of Education - Region III</div>
-        <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
+            # --- FAIL-SAFE HTML CONSTRUCTION ---
+            # We use a list and join it to prevent "unterminated string" errors.
