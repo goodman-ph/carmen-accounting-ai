@@ -1,50 +1,69 @@
 import streamlit as st
 import google.generativeai as genai
 from num2words import num2words
-import base64
 
-st.set_page_config(page_title="Carmen NHS DV Generator", layout="centered")
+# Basic Page Setup
+st.set_page_config(page_title="Carmen NHS", layout="centered")
 
-def format_amount_in_words(amount):
+def format_words(amount):
     try:
         pesos = int(amount)
-        centavos = int(round((amount - pesos) * 100))
-        words = num2words(pesos, lang='en').replace('and', '').title()
-        if centavos > 0:
-            return words + " and " + str(centavos) + "/100 Pesos Only"
-        return words + " Pesos Only"
+        words = num2words(pesos, lang='en').title()
+        return f"{words} Pesos Only"
     except:
-        return "_________________ Pesos Only"
+        return "Zero Pesos"
 
-# SIDEBAR
+# Sidebar
 with st.sidebar:
     st.header("📋 Voucher Details")
-    f_cluster = st.text_input("Fund Cluster", "01")
-    f_payee = st.text_input("Payee", "GSIS")
-    f_address = st.text_input("Address", "Cabanatuan City")
-    f_dv_no = st.text_input("DV No.", placeholder="2026-01-000")
-    f_amount = st.number_input("Amount (PHP)", min_value=0.0, format="%.2f")
-    f_date = st.date_input("Date")
+    v_payee = st.text_input("Payee", "GSIS")
+    v_amount = st.number_input("Amount", min_value=0.0)
+    v_date = st.date_input("Date")
 
-st.title("📑 Official DV Generator")
-u_input = st.text_area("Transaction Details:", placeholder="e.g., GSIS January Premiums")
+st.title("📑 Carmen NHS DV Generator")
+u_input = st.text_area("What is this payment for?")
 
-if st.button("Generate Complete Voucher"):
-    if u_input and f_amount > 0:
+if st.button("Generate Voucher"):
+    if u_input and v_amount > 0:
         try:
+            # Secure API Check
             if "GEMINI_API_KEY" not in st.secrets:
-                st.error("API Key missing in Secrets!")
+                st.error("Missing API Key in Secrets")
                 st.stop()
             
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
             model = genai.GenerativeModel('gemini-2.0-flash')
             
-            with st.spinner('Generating...'):
-                prompt = "Write a 1-paragraph DepEd accounting particular for " + str(u_input) + " at Carmen National High School. Start with 'Payment of'."
+            with st.spinner('Writing Particulars...'):
+                prompt = f"Write a 1-paragraph DepEd particular for {u_input} at Carmen NHS. Start with 'Payment of'."
                 response = model.generate_content(prompt)
-                p_text = response.text.replace("**", "").replace('"', "'").strip()
-                amt_words = format_amount_in_words(f_amount)
+                p_text = response.text.replace("*", "").strip()
+                amt_in_words = format_words(v_amount)
 
-                # THE SAFE STRING METHOD: Each line is closed individually
-                parts = [
-                    'PGRpdiBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjogd2hpdGU7IGNvbG9yOiBibGFjazsgcGFkZGluZzogMjVweDsgYm9yZGVyOiAzcHggc29saWQgYmxhY2s7IGZvbnQtZmFtaWx5OiAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWY7IHdpZHRoOiA2NTBweDsgbWFyZ2luOiBhdXRvOyBsaW5lLWhlaWdodDogMS4yOyI+PGRpdiBzdHlsZT0idGV4dC1hbGlnbjogcmlnaHQ7IGZvbnQtc2l6ZTogMTBweDsgZm9udC1zdHlsZTogaXRhbGljOyI+QXBwZW5kaXggMzI8L2Rpdj48ZGl2IHN0eWxlPSJ0
+            # --- THE VOUCHER DISPLAY ---
+            # We use st.markdown for maximum stability. No HTML syntax errors possible.
+            st.success("✅ Voucher Generated Successfully")
+            
+            st.markdown("---")
+            st.markdown(f"### DISBURSEMENT VOUCHER")
+            st.markdown(f"**CARMEN NATIONAL HIGH SCHOOL**")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"**Payee:** {v_payee}")
+                st.write(f"**Date:** {v_date}")
+            with col2:
+                st.write(f"**Amount:** ₱ {v_amount:,.2f}")
+            
+            st.info(f"**Particulars:**\n\n{p_text}")
+            
+            st.warning(f"**Amount in Words:**\n\n*{amt_in_words}*")
+            
+            st.markdown("---")
+            st.markdown("**A. Certified:** Expenses necessary, lawful and incurred under my supervision.")
+            st.write("**JESUSA D. BOTE, CESE** / *School Principal IV*")
+
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
+    else:
+        st.warning("Please fill in the details.")
