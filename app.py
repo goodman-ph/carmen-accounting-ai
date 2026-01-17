@@ -1,11 +1,11 @@
 import streamlit as st
 import google.generativeai as genai
 from num2words import num2words
+import base64
 
 # 1. Page Config
 st.set_page_config(page_title="Carmen NHS DV Generator", layout="centered")
 
-# 2. Amount Logic
 def format_amount_in_words(amount):
     try:
         pesos = int(amount)
@@ -17,7 +17,7 @@ def format_amount_in_words(amount):
     except:
         return "_________________ Pesos Only"
 
-# 3. Sidebar Inputs
+# 2. Sidebar Inputs
 with st.sidebar:
     st.header("📋 Voucher Details")
     f_cluster = st.text_input("Fund Cluster", "01")
@@ -43,29 +43,27 @@ if st.button("Generate Complete Voucher"):
             with st.spinner('Generating...'):
                 prompt = "Write a 1-paragraph DepEd accounting particular for " + u_input + " at Carmen National High School. Start with 'Payment of'."
                 response = model.generate_content(prompt)
-                p_text = response.text.replace("**", "").strip()
+                p_text = response.text.replace("**", "").replace('"', "'").strip()
                 amt_words = format_amount_in_words(f_amount)
 
-                # 4. THE TEMPLATE (No f-strings used here to avoid SyntaxErrors)
-                html_template = """
-<div style="background-color: white; color: black; padding: 25px; border: 3px solid black; font-family: 'Times New Roman', serif; width: 700px; margin: auto; line-height: 1.2;">
-    <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
-    <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 10px;">
-        <div style="font-size: 12px;">Department of Education - Region III</div>
-        <div style="font-weight: bold; font-size: 20px;">DISBURSEMENT VOUCHER</div>
-        <div style="font-weight: bold; font-size: 15px;">CARMEN NATIONAL HIGH SCHOOL</div>
-    </div>
-    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-        <tr>
-            <td style="border: 1px solid black; padding: 8px;"><b>Fund Cluster:</b> [FUND]</td>
-            <td style="border: 1px solid black; padding: 8px;"><b>Date:</b> [DATE]<br><b>DV No:</b> [DV_NO]</td>
-        </tr>
-        <tr>
-            <td style="border: 1px solid black; padding: 8px;" colspan="2"><b>Payee:</b> [PAYEE] | <b>Address:</b> [ADDR]</td>
-        </tr>
-    </table>
-    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: -1px;">
-        <tr style="text-align: center; font-weight: bold;">
-            <td style="border: 1px solid black; padding: 5px; width: 70%;">Particulars</td>
-            <td style="border: 1px solid black; padding: 5px;">Amount</td>
-        </tr>
+                # 3. BASE64 ENCODED TEMPLATE (Prevents Python Syntax Errors)
+                # This is a standard HTML template converted to a string Python can't break.
+                template_raw = (
+                    'PGRpdiBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjogd2hpdGU7IGNvbG9yOiBibGFjazsgcGFkZGluZzogMjVweDsgYm9yZGVyOiAzcHggc'
+                    '29saWQgYmxhY2s7IGZvbnQtZmFtaWx5OiAnVGltZXMgTmV3IFJvbWFuJywgc2VyaWY7IHdpZHRoOiA2NTBweDsgbWFyZ2luOiBhdXRv'
+                    'OyBsaW5lLWhlaWdodDogMS4yOyI+PGRpdiBzdHlsZT0idGV4dC1hbGlnbjogcmlnaHQ7IGZvbnQtc2l6ZTogMTBweDsgZm9udC1zdHl'
+                    'sZTogaXRhbGljOyI+QXBwZW5kaXggMzI8L2Rpdj48ZGl2IHN0eWxlPSJ0ZXh0LWFsaWduOiBjZW50ZXI7IGJvcmRlci1ib3R0b206ID'
+                    'JweCBzb2xpZ  YmxhY2s7IHBhZGRpbmctYm90dG9tOiAxMHB4OyBtYXJnaW4tYm90dG9tOiAxMHB4OyI+PGRpdiBzdHlsZT0iZm9udC1'
+                    'zaXplOiAxMnB4OyI+RGVwYXJ0bWVudCBvZiBFZHVjYXRpb24gLSBSZWdpb24gSUlJPC9kaXY+PGRpdiBzdHlsZT0iZm9udC13ZWlnaHQ'
+                    '6IGJvbGQ7IGZvbnQtc2l6ZTogMjBweDsiPkRJU0JVUlNFTUVOVCBWT1VDSEVSPC9kaXY+PGRpdiBzdHlsZT0iZm9udC13ZWlnaHQ6IGJ'
+                    'vbGQ7IGZvbnQtc2l6ZTogMTVweDsiPkNBUk1FTiBOQVRJT05BTCBISUdIIFNDSE9PTDwvZGl2PjwvZGl2Pjx0YWJsZSBzdHlsZT0id2l'
+                    'kdGg6IDEwMCU7IGJvcmRlci1jb2xsYXBzZTogY29sbGFwc2U7IGZvbnQtc2l6ZTogMTJweDsiPjx0cj48dGQgc3R5bGU9ImJvcmRlcjog'
+                    'MXB4IHNvbGlkIGJsYWNrOyBwYWRkaW5nOiA4cHg7Ij48Yj5GdW5kIENsdXN0ZXI6PC9iPiBbRlVORF08L3RkPjx0ZCBzdHlsZT0iYm9y'
+                    'ZGVyOiAxcHggc29saWQgYmxhY2s7IHBhZGRpbmc6IDhweDsiPjxiPkRhdGU6PC9iPiBbREFURV08YnI+PGI+RFYgTm86PC9iPiBbRFZf'
+                    'Tk9dPC90ZD48L3RyPjx0cj48dGQgc3R5bGU9ImJvcmRlcjogMXB4IHNvbGlkIGJsYWNrOyBwYWRkaW5nOiA4cHg7IiBjb2xzcGFuPSIy'
+                    'Ij48Yj5QYXllZTo8L2I+IFtQQVlFRV0gfCA8Yj5BZGRyZXNzOjwvYj4gW0FERFJdPC90ZD48L3RyPjwvdGFibGU+PHRhYmxlIHN0eWxl'
+                    'PSJ3aWR0aDogMTAwJTsgYm9yZGVyLWNvbGxhcHNlOiBjb2xsYXBzZTsgZm9udC1zaXplOiAxMnB4OyBtYXJnaW4tdG9wOiAtMXB4OyI+'
+                    'PHRyIHN0eWxlPSJ0ZXh0LWFsaWduOiBjZW50ZXI7IGZvbnQtd2VpZ2h0OiBib2xkOyI+PHRkIHN0eWxlPSJvcmRlcjogMXB4IHNvbGlk'
+                    'IGJsYWNrOyBwYWRkaW5nOiA1cHg7IHdpZHRoOiA3MCU7Ij5QYXJ0aWN1bGFyczwvdGQ+PHRkIHN0eWxlPSJib3JkZXI6IDFweCBzb2xp'
+                    'ZCBibGFjazsgcGFkZGluZzogNXB4OyI+QW1vdW50PC90ZD48L3RyPjx0cj48dGQgc3R5bGU9ImJvcmRlcjogMXB4IHNvbGlkIGJsYWNr'
+                    'OyBwYWRkaW5nOiAxNXB4OyBoZWlnaHQ6IDE4MHB4OyB2ZXJ0aWNhbC1hbGlnbjogdG9wOyB0ZXh0
