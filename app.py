@@ -49,15 +49,11 @@ if st.button("Generate Complete Voucher"):
             p_text = response.text.replace("**", "").strip()
             amt_words = format_amount_in_words(amount)
 
-            # BUILDING THE FULL TEMPLATE - FIXED ALL STRING LITERALS
-            html_content = [
-                '<div style="background-color: white; color: black; padding: 15px; border: 2px solid black; font-family: serif; width: 850px; margin: auto; line-height: 1.1;">',
-                '<div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>',
-                '<div style="text-align: center; border-bottom: 1px solid black; padding-bottom: 5px; margin-bottom: 5px;">',
-                '<div style="font-size: 11px;">Department of Education - Region III</div>',
-                '<div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>',
-                '<div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>',
-                '</div>',
-                '<table style="width: 100%; border-collapse: collapse; font-size: 11px; color: black;">',
-                f'<tr><td style="border: 1px solid black; padding: 4px; width: 75%;"><b>Fund Cluster:</b> {fund_cluster}</td><td style="border: 1px solid black; padding: 4px;"><b>Date:</b> {dv_date} <br> <b>DV No:</b> {dv_no}</td></tr>',
-                '<tr><td style="border: 1px solid black; padding: 4px;" colspan="2"><b>Mode of
+            # BUILDING THE FULL TEMPLATE - USING TRIPLE QUOTES FOR STABILITY
+            voucher_html = f"""
+<div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 800px; margin: auto; line-height: 1.2;">
+    <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
+    
+    <div style="text-align: center; margin-bottom: 10px;">
+        <div style="font-size: 12px;">Department of Education - Region III</div>
+        <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
