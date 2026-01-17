@@ -34,12 +34,22 @@ if st.button("Generate Complete Voucher"):
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         model = genai.GenerativeModel('gemini-2.5-flash')
         
-        with st.spinner('🖋️ Finalizing Official Template...'):
-            response = model.generate_content(f"Formal DepEd DV particulars for: {user_input}")
-            p_text = response.text
+        with st.spinner('🖋️ Cleaning Particulars...'):
+            # MASTER PROMPT: This ensures the AI doesn't talk back or use bullet points
+            prompt = (
+                f"Act as a Senior School Accountant. Generate ONLY the official 'Particulars' text "
+                f"for a Disbursement Voucher based on this: {user_input}. "
+                f"STRICT RULES: 1. Start with 'Payment of...'. 2. Write as one single, clean paragraph. "
+                f"3. Do NOT include bullet points, headers, or conversational filler. 4. Mention "
+                f"Carmen National High School. 5. Be professional and concise."
+            )
+            
+            response = model.generate_content(prompt)
+            # Remove any markdown bolding the AI might try to add
+            p_text = response.text.replace("**", "").strip()
             amt_words = format_amount_in_words(amount)
 
-            # BUILDING THE FULL TEMPLATE (BOX A to BOX E)
+            # BUILDING THE FULL TEMPLATE
             html_content = [
                 '<div style="background-color: white; color: black; padding: 15px; border: 2px solid black; font-family: serif; width: 850px; margin: auto; line-height: 1.1;">',
                 '<div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>',
@@ -56,19 +66,7 @@ if st.button("Generate Complete Voucher"):
                 '</table>',
                 '<table style="width: 100%; border-collapse: collapse; font-size: 11px; color: black; margin-top: -1px;">',
                 '<tr style="text-align: center; font-weight: bold;"><td style="border: 1px solid black; width: 50%;">Particulars</td><td style="border: 1px solid black; width: 20%;">Responsibility Center</td><td style="border: 1px solid black;">Amount</td></tr>',
-                f'<tr><td style="border: 1px solid black; padding: 8px; height: 120px; vertical-align: top;">{p_text}</td><td style="border: 1px solid black;"></td><td style="border: 1px solid black; text-align: right; padding: 8px; font-weight: bold;">₱ {amount:,.2f}</td></tr>',
+                f'<tr><td style="border: 1px solid black; padding: 8px; height: 180px; vertical-align: top; text-align: justify;">{p_text}</td><td style="border: 1px solid black;"></td><td style="border: 1px solid black; text-align: right; padding: 8px; font-weight: bold;">₱ {amount:,.2f}</td></tr>',
                 '</table>',
                 '<div style="border: 1px solid black; padding: 5px; font-size: 10px; margin-top: -1px;"><b>A. Certified:</b> Expenses/Cash Advance necessary, lawful and incurred under my direct supervision.<br><br><div style="text-align: center;"><b>JESUSA D. BOTE, CESE</b><br>School Principal IV</div></div>',
-                '<div style="border: 1px solid black; padding: 5px; font-size: 10px; margin-top: -1px;"><b>B. Accounting Entry:</b><br><table style="width: 100%; border-collapse: collapse; text-align: center; margin-top: 5px;"><tr><td style="border: 1px solid black;">Account Title</td><td style="border: 1px solid black;">UACS Code</td><td style="border: 1px solid black;">Debit</td><td style="border: 1px solid black;">Credit</td></tr><tr><td style="border: 1px solid black; height: 30px;"></td><td style="border: 1px solid black;"></td><td style="border: 1px solid black;"></td><td style="border: 1px solid black;"></td></tr></table></div>',
-                '<table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: -1px;"><tr>',
-                '<td style="border: 1px solid black; width: 50%; padding: 5px; vertical-align: top;"><b>C. Certified:</b><br>[ ] Cash Available<br>[ ] Subject to Authority to Debit Account<br>[ ] Supporting documents complete<br><br><b>GODFREY D. MANGULABNAN</b><br>Sr. Bookkeeper</td>',
-                f'<td style="border: 1px solid black; padding: 5px; vertical-align: top;"><b>D. Approved for Payment:</b><br><br><div style="text-align: center; font-style: italic; font-weight: bold;">{amt_words}</div><br><div style="text-align: center;"><b>JESUSA D. BOTE, CESE</b><br>School Principal IV</div></td>',
-                '</tr></table>',
-                '<div style="border: 1px solid black; padding: 5px; font-size: 10px; margin-top: -1px;"><b>E. Receipt of Payment:</b><br><table style="width: 100%; font-size: 10px;"><tr><td>Check/ADA No: ___________</td><td>Date: ___________</td><td>Bank: ___________</td></tr><tr><td>Signature: ___________</td><td>Date: ___________</td><td>Printed Name: ___________</td></tr></table></div>',
-                '</div>'
-            ]
-            
-            st.components.v1.html("".join(html_content), height=900, scrolling=True)
-            st.success("✅ Full Voucher Generated!")
-    else:
-        st.warning("Please enter details and an amount.")
+                '<div style="border: 1px solid black; padding: 5px; font-size: 10px; margin-top: -1px;"><b>B. Accounting Entry:</b><br
