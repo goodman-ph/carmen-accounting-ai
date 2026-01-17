@@ -14,7 +14,7 @@ else:
 # We use the most basic model ID to avoid the 404 error
 # This version is highly compatible with new API keys
 try:
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error(f"Model setup failed: {e}")
 
