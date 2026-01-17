@@ -16,7 +16,7 @@ else:
 
 # 2. Model Initialization
 try:
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 except Exception as e:
     st.error(f"Model setup error: {e}")
 
