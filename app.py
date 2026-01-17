@@ -45,23 +45,16 @@ if st.button("Generate Official Voucher"):
             words_amount = format_amount_in_words(amount)
 
             # --- 3. THE "APPENDIX 32" HTML TEMPLATE ---
-            # We use f-string and ensure triple quotes are closed at the end
+            # The SyntaxError fix: Ensure f-string is properly wrapped and closed
             voucher_html = f"""
-            <div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 100%; box-sizing: border-box;">
-                <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
-                <div style="text-align: center; border-bottom: 1px solid black; padding-bottom: 5px; margin-bottom: 10px;">
-                    <div style="font-size: 12px;">Department of Education - Region III</div>
-                    <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
-                    <div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>
-                </div>
+<div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 100%; box-sizing: border-box;">
+    <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
+    <div style="text-align: center; border-bottom: 1px solid black; padding-bottom: 5px; margin-bottom: 10px;">
+        <div style="font-size: 12px;">Department of Education - Region III</div>
+        <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
+        <div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>
+    </div>
 
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: black;">
-                    <tr>
-                        <td style="border: 1px solid black; padding: 5px; width: 60%;" colspan="2"><b>Fund Cluster:</b> {fund_cluster}</td>
-                        <td style="border: 1px solid black; padding: 5px;"><b>Date:</b> {dv_date.strftime('%m/%d/%Y')}<br><b>DV No:</b> {dv_no}</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid black; padding: 5px;" colspan="3"><b>Mode of Payment:</b> [ ] MDS Check &nbsp;&nbsp; [ ] Commercial Check &nbsp;&nbsp; [ ] ADA &nbsp;&nbsp; [ ] Others</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid black; padding: 5
+    <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: black;">
+        <tr>
+            <td style="
