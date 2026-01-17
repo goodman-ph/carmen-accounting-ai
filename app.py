@@ -2,39 +2,42 @@ import streamlit as st
 import google.generativeai as genai
 
 st.set_page_config(page_title="Carmen NHS AI", layout="wide")
-st.title("📑 Carmen NHS Accounting Particulars Generator")
+st.title("📑 Carmen NHS Accounting AI")
 
+# Secure API Configuration
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
-    st.error("API Key missing! Add it to Streamlit Secrets.")
+    st.error("Missing API Key! Please go to Streamlit Settings > Secrets.")
     st.stop()
 
-# This list covers the most common names for the Flash model
-# The app will try the first one, and move to the next if it hits a 404
-model_names = ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro']
+# We use the most basic model ID to avoid the 404 error
+# This version is highly compatible with new API keys
+try:
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+except Exception as e:
+    st.error(f"Model setup failed: {e}")
 
-st.markdown("---")
-user_input = st.text_input("Enter Expense Details:")
+st.info("System Instruction: Acting as DepEd Accountant for Carmen NHS.")
 
-if st.button("Generate All Particulars"):
+user_input = st.text_input("Enter Expense Details (e.g. Loyalty Award for Ador Dionisio):")
+
+if st.button("Generate Particulars"):
     if user_input:
-        success = False
-        for m_name in model_names:
-            try:
-                model = genai.GenerativeModel(m_name)
-                prompt = f"As a DepEd Accountant for Carmen NHS, generate ORS, DV, and JEV particulars for: {user_input}. Format them clearly."
-                
-                with st.spinner(f'Trying model {m_name}...'):
-                    response = model.generate_content(prompt)
-                    st.success(f"Success using {m_name}!")
-                    st.markdown(response.text)
-                    success = True
-                    break # Stop trying models once one works
-            except Exception as e:
-                continue # Try the next model in the list
-        
-        if not success:
-            st.error("All models failed. Please check if your API Key is restricted to a specific region or project in Google AI Studio.")
+        try:
+            # Simple, direct prompt
+            response = model.generate_content(
+                f"As a DepEd School Accountant, write the ORS, DV, and JEV particulars for: {user_input} at Carmen National High School."
+            )
+            
+            # Divide the output into columns for better viewing
+            st.success("Results Generated!")
+            st.markdown("---")
+            st.markdown(response.text)
+            
+        except Exception as e:
+            st.error("⚠️ Connection Error")
+            st.write(f"Server Message: {e}")
+            st.info("If you see '404', your API Key is still propagating. Please wait 3-5 minutes and try again.")
     else:
-        st.warning("Please type an expense description.")
+        st.warning("Please type something first.")
