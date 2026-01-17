@@ -2,7 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from num2words import num2words
 
-st.set_page_config(page_title="Carmen NHS DV Generator", layout="wide")
+st.set_page_config(page_title="Carmen NHS DV Generator", layout="centered")
 
 def format_amount_in_words(amount):
     try:
@@ -31,13 +31,14 @@ if st.button("Generate Complete Voucher"):
         st.error("❌ Please enter both details and an amount.")
     else:
         try:
-            # Verify API Key exists
             if "GEMINI_API_KEY" not in st.secrets:
                 st.error("🔑 API Key not found in Streamlit Secrets!")
                 st.stop()
                 
             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            # Updated to gemini-2.0-flash for better compatibility
+            model = genai.GenerativeModel('gemini-2.0-flash')
             
             with st.spinner('🖋️ Generating Particulars...'):
                 prompt = f"Write a 1-paragraph DepEd particulars for {user_input} for Carmen National High School. Start with 'Payment of'."
@@ -45,34 +46,18 @@ if st.button("Generate Complete Voucher"):
                 p_text = response.text.replace("**", "").strip()
                 amt_words = format_amount_in_words(amount)
 
-            # --- RENDER VOUCHER ---
-            # We use a container to ensure it stays in view
-            with st.container():
-                html_code = f"""
-                <div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: serif; width: 750px; margin: auto;">
-                    <h2 style="text-align: center;">DISBURSEMENT VOUCHER</h2>
-                    <h4 style="text-align: center;">CARMEN NATIONAL HIGH SCHOOL</h4>
-                    <hr>
-                    <p><b>Payee:</b> {payee} <br> <b>Amount:</b> ₱ {amount:,.2f}</p>
-                    <div style="border: 1px solid black; padding: 10px; height: 150px;">
-                        <b>Particulars:</b><br>{p_text}
-                    </div>
-                    <p style="text-align: center; font-style: italic; font-weight: bold; margin-top: 10px;">{amt_words}</p>
-                    <table style="width: 100%; border-top: 1px solid black; margin-top: 20px;">
-                        <tr>
-                            <td><b>Certified by:</b><br><br>JESUSA D. BOTE, CESE<br>Principal IV</td>
-                            <td><b>Accounting:</b><br><br>GODFREY D. MANGULABNAN<br>Sr. Bookkeeper</td>
-                        </tr>
-                    </table>
+            # --- THE FULL VOUCHER HTML ---
+            # We use a single string to avoid syntax errors
+            voucher_html = f"""
+            <div style="background-color: white; color: black; padding: 25px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 700px; margin: auto; line-height: 1.2;">
+                <div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
+                <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
+                    <div style="font-size: 12px;">Department of Education - Region III</div>
+                    <div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>
+                    <div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>
                 </div>
-                """
-                # This is the command that shows the voucher
-                st.components.v1.html(html_code, height=600, scrolling=True)
-                
-                # FALLBACK: If the component above is blank, this text will still show
-                st.info("💡 If the box above is blank, check your browser's 'Block Pop-ups' settings.")
-                st.subheader("Generated Particulars (Copy/Paste):")
-                st.write(p_text)
 
-        except Exception as e:
-            st.error(f"⚠️ An error occurred: {str(e)}")
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 5px;">
+                    <tr>
+                        <td style="border: 1px solid black; padding: 5px; width: 70%;"><b>Fund Cluster:</b> {fund_cluster}</td>
+                        <td style="border: 1px solid black; padding: 5px;"><b>Date:</b> {dv_date}<br><b>DV No:</b> {dv_no}
