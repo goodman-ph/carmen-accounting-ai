@@ -42,8 +42,42 @@ if st.button("Generate Official Voucher"):
             p_text = response.text
             amt_words = format_amount_in_words(amount)
 
-            # THE FIXED HTML BLOCK
-            voucher_html = f"""
-<div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: 'Times New Roman', serif; width: 100%;">
-<div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>
-<div style="text-align: center; border-bottom: 1px solid
+            # FAIL-SAFE METHOD: Building the HTML piece by piece to avoid SyntaxErrors
+            html_parts = [
+                '<div style="background-color: white; color: black; padding: 20px; border: 2px solid black; font-family: serif; width: 100%;">',
+                '<div style="text-align: right; font-size: 10px; font-style: italic;">Appendix 32</div>',
+                '<div style="text-align: center; border-bottom: 1px solid black; padding-bottom: 10px; margin-bottom: 10px;">',
+                '<div style="font-size: 11px;">Department of Education - Region III</div>',
+                '<div style="font-weight: bold; font-size: 18px;">DISBURSEMENT VOUCHER</div>',
+                '<div style="font-weight: bold; font-size: 14px;">CARMEN NATIONAL HIGH SCHOOL</div>',
+                '</div>',
+                '<table style="width: 100%; border-collapse: collapse; font-size: 12px; color: black;">',
+                f'<tr><td style="border: 1px solid black; padding: 5px;" colspan="2"><b>Fund Cluster:</b> {fund_cluster}</td>',
+                f'<td style="border: 1px solid black; padding: 5px;"><b>Date:</b> {dv_date.strftime("%m/%d/%Y")}<br><b>DV No:</b> {dv_no}</td></tr>',
+                '<tr><td style="border: 1px solid black; padding: 5px;" colspan="3"><b>Mode of Payment:</b> [ ] MDS Check &nbsp;&nbsp; [ ] Commercial Check &nbsp;&nbsp; [ ] ADA &nbsp;&nbsp; [ ] Others</td></tr>',
+                f'<tr><td style="border: 1px solid black; padding: 5px;" colspan="3"><b>Payee:</b> {payee}<br><b>Address:</b> {address}</td></tr>',
+                '<tr style="text-align: center; font-weight: bold; background-color: #f2f2f2;">',
+                '<td style="border: 1px solid black; padding: 5px; width: 50%;">Particulars</td>',
+                '<td style="border: 1px solid black; padding: 5px; width: 25%;">Responsibility Center</td>',
+                '<td style="border: 1px solid black; padding: 5px; width: 25%;">Amount</td></tr>',
+                f'<tr><td style="border: 1px solid black; padding: 10px; height: 180px; vertical-align: top;">{p_text}</td>',
+                '<td style="border: 1px solid black;"></td>',
+                f'<td style="border: 1px solid black; text-align: right; padding: 10px; vertical-align: top; font-weight: bold;">₱ {amount:,.2f}</td></tr>',
+                '</table>',
+                '<div style="border: 1px solid black; padding: 10px; font-size: 11px; margin-top: 5px;">',
+                '<b>A. Certified:</b> Expenses/Cash Advance necessary, lawful and incurred under my direct supervision.<br><br>',
+                '<div style="text-align: center;"><b>JESUSA D. BOTE, CESE</b><br>School Principal IV</div>',
+                '</div>',
+                '<div style="border: 1px solid black; padding: 10px; background-color: #f9f9f9; font-size: 11px; margin-top: 5px;">',
+                f'<b>D. Approved for Payment:</b><br><br><div style="text-align: center; font-style: italic; font-weight: bold; font-size: 13px;">{amt_words}</div>',
+                '</div>',
+                '</div>'
+            ]
+            
+            # Combine all parts into one clean string
+            voucher_html = "".join(html_parts)
+            
+            st.components.v1.html(voucher_html, height=750, scrolling=True)
+            st.success("✅ Voucher Generated Successfully!")
+    else:
+        st.warning("Please enter transaction details and an amount.")
